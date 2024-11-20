@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sound Classification Result</title>
+</head>
+<body>
+    <h1>Classification Result</h1>
+    <p>Predicted Class: {{ class_name }}</p>
+    <p>Confidence: {{ confidence }}%</p>
+
+    <!-- Audio Playback Section -->
+    <h2>Audio Playback</h2>
+    <audio controls>
+        <source src="data:audio/wav;base64,{{ audio_base64 }}" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Visuals Section -->
+    <h2>Waveform and Mel-spectrogram</h2>
+    {% if image_base64 %}
+        <img src="data:image/png;base64,{{ image_base64 }}" alt="Waveform and Mel-spectrogram">
+    {% else %}
+        <p>No visual available for the predicted neutral class.</p>
+    {% endif %}
+
+    <!-- Percentage Distribution Section -->
+    <h2>Percentage Distribution</h2>
+    <table>
+        <tr>
+            <th>Class</th>
+            <th>Percentage</th>
+        </tr>
+        {% for class, percentage in percentage_distribution.items() %}
+        <tr>
+            <td>{{ class }}</td>
+            <td>{{ percentage }}%</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Button to go back to upload page -->
+    <br><br>
+    <a href="{{ url_for('index') }}">
+        <button>Re-upload File</button>
+    </a>
+
+</body>
+</html>

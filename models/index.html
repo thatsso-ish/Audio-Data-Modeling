@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Classification</title>
+</head>
+<body>
+    <h1>Audio Classification</h1>
+    
+    <!-- File Upload Form -->
+    <form action="/" method="POST" enctype="multipart/form-data">
+        <label for="file">Upload an audio file:</label>
+        <input type="file" id="file" name="file" accept="audio/*" required>
+        <button type="submit">Submit</button>
+    </form>
+    
+    <hr>
+    
+    <!-- Recording Section -->
+    <h2>Record Audio</h2>
+    <div>
+        <label for="duration">Recording Duration (seconds):</label>
+        <input type="number" id="duration" min="1" max="60" value="10">
+    </div>
+    <div>
+        <button id="recordButton">Record</button>
+        <button id="pauseButton" disabled>Pause</button>
+        <button id="resumeButton" disabled>Resume</button>
+        <button id="stopButton" disabled>Stop</button>
+    </div>
+    <audio id="recordedAudio" controls></audio>
+    
+    <form id="recordingForm" action="/upload_recording" method="POST" enctype="multipart/form-data" style="display: none;">
+        <input type="hidden" name="recorded_audio" id="recordedAudioData">
+        <button type="submit">Submit Recording</button>
+    </form>
+    
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        const recordButton = document.getElementById("recordButton");
+        const pauseButton = document.getElementById("pauseButton");
+        const resumeButton = document.getElementById("resumeButton");
+        const stopButton = document.getElementById("stopButton");
+        const recordedAudio = document.getElementById("recordedAudio");
+        const recordingForm = document.getElementById("recordingForm");
+        const recordedAudioData = document.getElementById("recordedAudioData");
+        const durationInput = document.getElementById("duration");
+
+        recordButton.addEventListener("click", async () => {
+            const duration = parseInt(durationInput.value, 10) * 1000;
+
+            if (isNaN(duration) || duration <= 0) {
+                alert("Please enter a valid duration.");
+                return;
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: "audio/webm" });
+                const url = URL.createObjectURL(blob);
+                recordedAudio.src = url;
+                recordedAudio.style.display = "block";
+
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    recordedAudioData.value = reader.result.split(",")[1]; // Base64 encoding
+                    recordingForm.style.display = "block";
+                };
+                reader.readAsDataURL(blob);
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+
+            setTimeout(() => {
+                if (isRecording) {
+                    mediaRecorder.stop();
+                }
+            }, duration);
+
+            recordButton.disabled = true;
+            pauseButton.disabled = false;
+            stopButton.disabled = false;
+        });
+
+        pauseButton.addEventListener("click", () => {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.pause();
+                pauseButton.disabled = true;
+                resumeButton.disabled = false;
+            }
+        });
+
+        resumeButton.addEventListener("click", () => {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.resume();
+                pauseButton.disabled = false;
+                resumeButton.disabled = true;
+            }
+        });
+
+        stopButton.addEventListener("click", () => {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+
+                recordButton.disabled = false;
+                pauseButton.disabled = true;
+                resumeButton.disabled = true;
+                stopButton.disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>
